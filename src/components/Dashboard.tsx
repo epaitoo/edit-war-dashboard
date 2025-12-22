@@ -21,7 +21,7 @@ export function Dashboard() {
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900">
-          🚨 Wikipedia Edit War Detector
+          Wikipedia Edit War Detector
         </h1>
         <p className="text-gray-600 mt-2">
           Real-time monitoring of Wikipedia conflicts
