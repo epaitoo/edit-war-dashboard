@@ -7,6 +7,7 @@ import { useSSE } from '../hooks/useSSE';
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { NotificationBanner } from './NotificationBanner';
+import { Link } from 'react-router-dom';
 
 export function Dashboard() {
 
@@ -176,12 +177,27 @@ export function Dashboard() {
       
 
       {/* Live Feed */}
+      {/* Live Feed */}
       <section className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          <h2 className="text-2xl font-bold">Recent Edit Wars</h2>
+        {/* Header with View All button - TOP */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <h2 className="text-2xl font-bold">Recent Edit Wars</h2>
+          </div>
+          
+          <Link 
+            to="/alerts"
+            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 transition"
+          >
+            View All
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
 
+        {/* Alerts list */}
         {displayedAlerts && displayedAlerts.length > 0 ? (
           <div className="space-y-4">
             {displayedAlerts.map((alert, idx) => (
@@ -195,9 +211,20 @@ export function Dashboard() {
           </div>
         )}
 
-        <button className="mt-6 text-blue-600 hover:text-blue-800 font-medium">
-          View All Past Battles →
-        </button>
+        {/* Bottom button - only show if there are many alerts */}
+        {displayedAlerts && displayedAlerts.length > 5 && (
+          <div className="mt-6 text-center">
+            <Link 
+              to="/alerts"
+              className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-2"
+            >
+              View All Past Battles
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* SSE Error indicator */}
@@ -288,12 +315,12 @@ function AlertCard({ alert }: { alert: EditWarAlert }) {
       </div>
 
       {/* Action */}
-      <button
-        onClick={() => window.alert(`Details for ${alert.pageTitle}`)}
-        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+      <Link 
+        to={`/alerts/${alert.pageTitle}`}  // We'll use pageTitle as ID for now
+        className="text-blue-600 hover:text-blue-800 font-medium text-sm inline-block"
       >
         View Full Battle →
-      </button>
+      </Link>
     </div>
   );
 }
