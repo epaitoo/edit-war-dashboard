@@ -3,16 +3,19 @@ import { Dashboard } from './components/Dashboard';
 import './index.css';
 import { AlertDetailPage } from './components/AlertDetailPage';
 import { AlertsListPage } from './components/AlertsListPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/alerts" element={<AlertsListPage />} />
-        <Route path="/alerts/:id" element={<AlertDetailPage />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/alerts" element={<AlertsListPage />} />
+          <Route path="/alerts/:id" element={<AlertDetailPage />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

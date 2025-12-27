@@ -8,15 +8,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { NotificationBanner } from './NotificationBanner';
 import { Link } from 'react-router-dom';
+import { useHealthCheck } from '../hooks/useHealthCheck';
+import { LiveActivity } from './LiveActivity';
+
 
 export function Dashboard() {
 
   // Fetch initial data
   const { data: alerts, isLoading: alertsLoading, error: alertsError } = useRecentAlerts();
   const { data: stats, isLoading: statsLoading } = useStats();
+  const { data: health, error: healthError } = useHealthCheck();
+
+  const SSE_URL = import.meta.env.VITE_SSE_URL || 'http://localhost:8081/stream';
 
   // Connect to SSE stream
-  const { events, isConnected, error: sseError } = useSSE('http://localhost:8081/stream');
+  const { events, recentEdits, editCount, isConnected, error: sseError } = useSSE(SSE_URL); 
+
   
   // State for new alerts from SSE
   const [newAlerts, setNewAlerts] = useState<EditWarAlert[]>([]);
@@ -37,10 +44,7 @@ export function Dashboard() {
 
   // Process SSE events
   useEffect(() => {
-    console.log('🔄 Events changed, total:', events.length);
     if (events.length === 0) return;
-
-      if (events.length === 0) return;
 
     const latestEvent = events[events.length - 1];
     
@@ -117,126 +121,168 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="animate-fade-in">
+      <div className="min-h-screen bg-gray-50 p-8">
 
-      {/* Scroll anchor */}
-      <div ref={topRef} />
-      
-      {/* Notification Banner */}
-      <NotificationBanner 
-        newAlerts={newAlerts}
-        onView={handleViewNewAlerts}
-        onDismiss={handleDismissNotification}
-      />
-
-
-
-      {/* Header */}
-      <header className="mb-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">
-              🚨 Wikipedia Edit War Detector
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Real-time monitoring of Wikipedia conflicts
-            </p>
-          </div>
-          
-          {/* Connection Status */}
-          <div className="flex items-center gap-2 text-sm">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className={isConnected ? 'text-green-700' : 'text-red-700'}>
-              {isConnected ? 'Live' : 'Disconnected'}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <StatCard 
-          title="Total Alerts" 
-          value={stats?.totalAlerts ?? 0}
-          color="blue"
+        {/* Scroll anchor */}
+        <div ref={topRef} />
+        
+        {/* Notification Banner */}
+        <NotificationBanner 
+          newAlerts={newAlerts}
+          onView={handleViewNewAlerts}
+          onDismiss={handleDismissNotification}
         />
-        <StatCard 
-          title="Active Wars" 
-          value={stats?.activeAlerts ?? 0}
-          trend={stats?.activeAlerts ? `+${stats.activeAlerts}` : undefined}
-          color="red"
-        />
-        <StatCard 
-          title="Resolved" 
-          value={stats?.resolvedAlerts ?? 0}
-          icon="✅"
-          color="gray"
-        />
-      </div>
 
-      
 
-      {/* Live Feed */}
-      {/* Live Feed */}
-      <section className="bg-white rounded-lg shadow-md p-6">
-        {/* Header with View All button - TOP */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-            <h2 className="text-2xl font-bold">Recent Edit Wars</h2>
+
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">
+                🚨 Wikipedia Edit War Detector
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Real-time monitoring of Wikipedia conflicts
+              </p>
+            </div>
+            
+            {/* Connection Status */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={isConnected ? 'text-green-700' : 'text-red-700'}>
+                {isConnected ? 'Live' : 'Disconnected'}
+              </span>
+            </div>
           </div>
-          
-          <Link 
-            to="/alerts"
-            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 transition"
-          >
-            View All
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+        </header>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <StatCard 
+            title="Total Alerts" 
+            value={stats?.totalAlerts ?? 0}
+            color="blue"
+          />
+          <StatCard 
+            title="Active Wars" 
+            value={stats?.activeAlerts ?? 0}
+            trend={stats?.activeAlerts ? `+${stats.activeAlerts}` : undefined}
+            color="red"
+          />
+          <StatCard 
+            title="Resolved" 
+            value={stats?.resolvedAlerts ?? 0}
+            icon="✅"
+            color="gray"
+          />
         </div>
 
-        {/* Alerts list */}
-        {displayedAlerts && displayedAlerts.length > 0 ? (
-          <div className="space-y-4">
-            {displayedAlerts.map((alert, idx) => (
-              <AlertCard key={`${alert.pageTitle}-${idx}`} alert={alert} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg font-medium">No edit wars detected yet</p>
-            <p className="text-sm mt-2">The system is monitoring Wikipedia...</p>
-          </div>
-        )}
+        {/* Live Activity */}
+        <LiveActivity 
+          recentEdits={recentEdits}
+          editCount={editCount}
+          isConnected={isConnected}
+        />
+        
 
-        {/* Bottom button - only show if there are many alerts */}
-        {displayedAlerts && displayedAlerts.length > 5 && (
-          <div className="mt-6 text-center">
+        
+        {/* Live Feed */}
+        <section className="bg-white rounded-lg shadow-md p-6">
+          {/* Header with View All button - TOP */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              <h2 className="text-2xl font-bold">Recent Edit Wars</h2>
+            </div>
+            
             <Link 
               to="/alerts"
-              className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-2"
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 transition"
             >
-              View All Past Battles
+              View All
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </div>
+
+
+          {/* Alerts list */}
+          {displayedAlerts && displayedAlerts.length > 0 ? (
+            <div className="space-y-4">
+              {displayedAlerts.map((alert, idx) => (
+                <AlertCard key={`${alert.pageTitle}-${idx}`} alert={alert} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">🔍</div>
+              <p className="text-xl font-semibold text-gray-700 mb-2">
+                No edit wars detected yet
+              </p>
+              <p className="text-gray-500 mb-6">
+                The system is actively monitoring Wikipedia for conflicts
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Tip:</strong> Edit wars typically occur on controversial topics. 
+                  Try the test endpoint to see the system in action!
+                </p>
+              </div>
+            </div>
+          )}
+
+          
+
+          {/* Bottom button - only show if there are many alerts */}
+          {displayedAlerts && displayedAlerts.length > 5 && (
+            <div className="mt-6 text-center">
+              <Link 
+                to="/alerts"
+                className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-2"
+              >
+                View All Past Battles
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* SSE Error indicator */}
+        {sseError && (
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Live updates disconnected. Historical data still available.
+            </p>
+          </div>
         )}
-      </section>
 
-      {/* SSE Error indicator */}
-      {sseError && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-800">
-            ⚠️ Live updates disconnected. Historical data still available.
-          </p>
-        </div>
-      )}
+        {/* Show warning if backend is unhealthy */}
+        {healthError && (
+          <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Warning:</strong> Unable to connect to backend API. 
+                  Some features may not work properly.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
+      </div>
     </div>
+    
   );
 }
 

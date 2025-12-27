@@ -5,15 +5,24 @@ export interface SSEEvent {
   data: any;
 }
 
+export interface RecentEdit {
+  pageTitle: string;
+  user: string;
+  lengthChange: number;
+  timestamp: number;
+}
+
 export function useSSE(url: string) {
   const [events, setEvents] = useState<SSEEvent[]>([]);
+  const [recentEdits, setRecentEdits] = useState<RecentEdit[]>([]); 
+  const [editCount, setEditCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null); 
+  const reconnectTimeoutRef = useRef<number | null>(null);
 
   const connect = useCallback(() => {
-    console.log('Connecting to SSE:', url);
+    console.log('🔌 Connecting to SSE:', url);
     
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
@@ -27,16 +36,30 @@ export function useSSE(url: string) {
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
-        console.log('📦 Parsed SSE Data:', parsed);
         
         if (parsed.type === 'EDIT_WAR') {
           console.log('🚨 EDIT WAR EVENT!', parsed.data);
           setEvents((prev) => [...prev, { type: 'EDIT_WAR', data: parsed.data }]);
         } else {
+          // Regular edit 
           setEvents((prev) => [...prev, { type: 'EDIT', data: parsed }]);
+          
+          // Extract edit info from Wikipedia event
+          if (parsed.title) {
+            const edit: RecentEdit = {
+              pageTitle: parsed.title,
+              user: parsed.user || parsed.bot ? `${parsed.user} (bot)` : 'Anonymous',
+              lengthChange: (parsed.length?.new || 0) - (parsed.length?.old || 0),
+              timestamp: Date.now()
+            };
+            
+            // Keep only last 5 edits
+            setRecentEdits((prev) => [edit, ...prev].slice(0, 5));
+            setEditCount((prev) => prev + 1);
+          }
         }
       } catch (e) {
-        console.log('Non-JSON event');
+        console.log('📝 Non-JSON event');
         setEvents((prev) => [...prev, { type: 'EDIT', data: event.data }]);
       }
     };
@@ -47,9 +70,8 @@ export function useSSE(url: string) {
       setIsConnected(false);
       eventSource.close();
       
-      // Auto-reconnect after 5 seconds
       console.log('⏳ Reconnecting in 5 seconds...');
-      reconnectTimeoutRef.current = window.setTimeout(() => { 
+      reconnectTimeoutRef.current = window.setTimeout(() => {
         connect();
       }, 5000);
     };
@@ -58,14 +80,13 @@ export function useSSE(url: string) {
   useEffect(() => {
     connect();
 
-    // Cleanup
     return () => {
       console.log('🔌 Closing SSE connection');
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }
       if (reconnectTimeoutRef.current) {
-        window.clearTimeout(reconnectTimeoutRef.current); 
+        window.clearTimeout(reconnectTimeoutRef.current);
       }
     };
   }, [connect]);
@@ -77,16 +98,20 @@ export function useSSE(url: string) {
       eventSourceRef.current.close();
     }
     if (reconnectTimeoutRef.current) {
-      window.clearTimeout(reconnectTimeoutRef.current); 
+      window.clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
     setEvents([]);
+    setRecentEdits([]);
+    setEditCount(0);
     setError(null);
     connect();
   };
 
   return {
     events,
+    recentEdits, 
+    editCount,  
     isConnected,
     error,
     clearEvents,
