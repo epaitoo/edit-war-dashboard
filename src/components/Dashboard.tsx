@@ -17,7 +17,7 @@ export function Dashboard() {
   // Fetch initial data
   const { data: alerts, isLoading: alertsLoading, error: alertsError } = useRecentAlerts();
   const { data: stats, isLoading: statsLoading } = useStats();
-  const { data: health, error: healthError } = useHealthCheck();
+  const { data: _, error: healthError } = useHealthCheck();
 
   const SSE_URL = import.meta.env.VITE_SSE_URL || 'http://localhost:8081/stream';
 
