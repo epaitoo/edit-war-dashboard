@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import type { EditWarAlert } from '../api/client';
 
 export interface SSEEvent {
   type: 'EDIT' | 'EDIT_WAR';
-  data: any;
+  data: EditWarAlert | string | Record<string, unknown>;
 }
 
 export interface RecentEdit {
@@ -58,7 +59,7 @@ export function useSSE(url: string) {
             setEditCount((prev) => prev + 1);
           }
         }
-      } catch (e) {
+      } catch {
         console.log('📝 Non-JSON event');
         setEvents((prev) => [...prev, { type: 'EDIT', data: event.data }]);
       }

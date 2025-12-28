@@ -64,7 +64,7 @@ export const api = {
 }
 
 export interface EditWarAlert {
-  severityLevel: any;
+  severityLevel: string;
   pageTitle: string;
   wiki: string;
   severityScore: number;

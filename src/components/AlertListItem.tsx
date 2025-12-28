@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import type { EditWarAlert } from "../api/client";
 
-export function AlertListItem({ alert }: { alert: any }) {
+export function AlertListItem({ alert }: { alert: EditWarAlert }) {
   const getSeverityLevel = (score: number): string => {
     if (score >= 0.8) return 'CRITICAL';
     if (score >= 0.6) return 'HIGH';

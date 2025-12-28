@@ -17,7 +17,7 @@ export function Dashboard() {
   // Fetch initial data
   const { data: alerts, isLoading: alertsLoading, error: alertsError } = useRecentAlerts();
   const { data: stats, isLoading: statsLoading } = useStats();
-  const { data: _, error: healthError } = useHealthCheck();
+  const { error: healthError } = useHealthCheck();
 
   const SSE_URL = import.meta.env.VITE_SSE_URL || 'http://localhost:8081/stream';
 
@@ -54,11 +54,11 @@ export function Dashboard() {
       // Parse the alert data
       try {
         let alertData: EditWarAlert;
-        
+
         if (typeof latestEvent.data === 'string') {
           alertData = JSON.parse(latestEvent.data);
         } else {
-          alertData = latestEvent.data;
+          alertData = latestEvent.data as EditWarAlert;
         }
 
         // Add to new alerts (for notification)
